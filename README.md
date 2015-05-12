@@ -1,3 +1,7 @@
+Running the Code
+
+After installation, this code may be run using the Successive Code ipython notebook. Within this notebook, the variable of interest, i.e. pga, the radius, the desired number of realizations, and the path to the xml files may be set. 
+
 Installation and Dependencies
 
 This package depends on:
@@ -14,4 +18,4 @@ https://github.com/gem/oq-hazardlib
 
 basemap, for plotting http://matplotlib.org/basemap/
 
-This implementation was written using Anaconda
+This implementation was written using Anaconda and uses ipython notebook
