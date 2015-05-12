@@ -15,8 +15,7 @@ def realizations(num_realizations, N,M, grid_arr, mu_arr, sigma_arr, uncertainty
         COR = np.reshape(X, [M,N])
         X = np.multiply(COR, uncertaintydata)
         DATA_NEW = DATA * np.exp(X)
-        #    pow2 = np.sum(DATA_NEWnew.flatten())
-        #    DATA_NEWnew = DATA_NEWnew * pow1 / pow2
+
         if j == 0:
             ACCUM_ARRAY = DATA_NEW.copy()
         else:

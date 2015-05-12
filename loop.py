@@ -18,7 +18,7 @@ from matplotlib import cm
 from neicio.gmt import GMTGrid
 import time
 
-def main(var, r, voi):
+def main(var, r, voi, rand):
     #####
     # Main program for computing spatial correlation
     # IN: var- variables dictionary from initialize function. Contains M,N,K,site_collection_SM, site_collection_station
@@ -84,7 +84,7 @@ def main(var, r, voi):
             if np.size(dist_calc['inc_indices']) == 1:
 
                 # no conditioning points, correlation value is random                                                                                          
-                X[num] = np.random.randn()
+                X[num] = rand[num]
 
                 # Store for multiple realizations                                                                                                                 
                 grid_arr [num] = np.zeros(0)
@@ -102,12 +102,12 @@ def main(var, r, voi):
                         first_time_per_row = 0
 
                     mu  = base['Sig12'].T*base['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
-                    rand_num = np.random.randn()
+                    rand_num = rand[num]
                     X[num] = mu+rand_num*base['R']
 
                     # Store for multiple realizations                                                                                                       
                     grid_arr [num] = dist_calc['inc_ind'][0:-1]
-                    mu_arr   [num] = (base['Sig12'].T*base['Sig11inv']).copy()
+                    mu_arr   [num] = base['Sig12'].T*base['Sig11inv']
                     sigma_arr[num] = base['R']
                     rand_arr [num] = rand_num
 
@@ -115,12 +115,12 @@ def main(var, r, voi):
                     other = calculate_corr(out['dist_mat'], voi, JB_cor_model)
                     
                     mu = other['Sig12'].T*other['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
-                    rand_num = np.random.randn()
+                    rand_num = rand[num]
                     X[num] = mu+rand_num*other['R']
 
                     # Store for multiple realizations                                                                             
                     grid_arr [num] = dist_calc['inc_ind'][0:-1]
-                    mu_arr   [num] = (other['Sig12'].T*other['Sig11inv']).copy()
+                    mu_arr   [num] = other['Sig12'].T*other['Sig11inv']
                     sigma_arr[num] = other['R']
                     rand_arr [num] = rand_num
 
