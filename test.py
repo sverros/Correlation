@@ -1,16 +1,17 @@
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import datetime
 from neicio.readstation import readStation
 from neicio.shake import ShakeGrid
-from openquake.hazardlib.correlation import JB2009CorrelationModel
-from openquake.hazardlib.correlation import BaseCorrelationModel
-from openquake.hazardlib.geo.geodetic import geodetic_distance
-from openquake.hazardlib.imt import from_string
+import numpy as np
+#from openquake.hazardlib.correlation import JB2009CorrelationModel
+#from openquake.hazardlib.correlation import BaseCorrelationModel
+#from openquake.hazardlib.geo.geodetic import geodetic_distance
+#from openquake.hazardlib.imt import from_string
 import time
-from mpl_toolkits.basemap import Basemap
+#from mpl_toolkits.basemap import Basemap
 from matplotlib import cm
 from neicio.gmt import GMTGrid
-from openquake.hazardlib.imt import PGA as IMT
+#from openquake.hazardlib.imt import PGA as IMT
 import sys
 sys.path.append('/Users/sverros/Documents/Modules')
 
@@ -40,6 +41,7 @@ topofile = '/Users/sverros/Documents/etopo1_bed_g_f4.grd'
 print 'Calling initialize'
 variables = initialize(shakemap, uncertainty, stationdata)
 print 'Calling main'
-outputs = main(variables, r, voi)
+rand = np.random.randn(variables['N']*variables['M'])
+outputs = main(variables, r, voi, rand)
 
 
