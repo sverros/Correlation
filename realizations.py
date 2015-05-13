@@ -20,11 +20,9 @@ def realizations(num_realizations, N,M, grid_arr, mu_arr, sigma_arr, uncertainty
             ACCUM_ARRAY = DATA_NEW.copy()
         else:
             ACCUM_ARRAY += DATA_NEW
-        if num_realizations < 10:
+        
+        if np.mod(j+1, 25) == 0:
             print "Done with", j+1, "of", num_realizations, "iterations."
-        else:
-            if np.mod(j+1, 25) == 0:
-                print "Done with", j+1, "of", num_realizations, "iterations."
 
     ACCUM_ARRAY = ACCUM_ARRAY / num_realizations
 
