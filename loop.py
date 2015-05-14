@@ -18,7 +18,7 @@ from matplotlib import cm
 from neicio.gmt import GMTGrid
 import time
 
-def main(var, r, voi, rand):
+def main(var, r, voi, rand, intensity_factor):
     #####
     # Main program for computing spatial correlation
     # IN: var- variables dictionary from initialize function. Contains M,N,K,site_collection_SM, site_collection_station
@@ -98,7 +98,7 @@ def main(var, r, voi, rand):
                        dist_calc['num_indices'] == 2*vhva['hor']+1)) and (np.size(out['inc_sta_indices']) == 0):
                     # If this is the first full distance matrix per row, calculate base case
                     if first_time_per_row == 1:
-                        base = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'])
+                        base = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], intensity_factor)
                         first_time_per_row = 0
 
                     mu  = base['Sig12'].T*base['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
@@ -112,7 +112,7 @@ def main(var, r, voi, rand):
                     rand_arr [num] = rand_num
 
                 else:
-                    other = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'])
+                    other = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], intensity_factor)
                     
                     mu = other['Sig12'].T*other['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
                     rand_num = rand[num]
@@ -145,7 +145,7 @@ def main(var, r, voi, rand):
 
 
 
-def calculate_corr(dist_mat, voi, JB_cor_model, var, inc_sta_indices):
+def calculate_corr(dist_mat, voi, JB_cor_model, var, inc_sta_indices, intensity_factor = 0.9):
     #####
     # Calculates correlation model for distance matrix and voi
     # IN: dist_mat- reduced distance matrix
@@ -154,7 +154,6 @@ def calculate_corr(dist_mat, voi, JB_cor_model, var, inc_sta_indices):
     #OUT: Sig12, Sig11inv- partitions of correlation matrix
     #     R - Sqrt of sigma
     #####
-    intensity_factor = 0.9
     correlation_model = JB_cor_model._get_correlation_model(dist_mat, from_string(voi))
     
     intensity = var['intensity'][inc_sta_indices]
