@@ -98,7 +98,7 @@ def main(var, r, voi, rand):
                        dist_calc['num_indices'] == 2*vhva['hor']+1)) and (np.size(out['inc_sta_indices']) == 0):
                     # If this is the first full distance matrix per row, calculate base case
                     if first_time_per_row == 1:
-                        base = calculate_corr(out['dist_mat'], voi, JB_cor_model)
+                        base = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'])
                         first_time_per_row = 0
 
                     mu  = base['Sig12'].T*base['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
@@ -112,7 +112,7 @@ def main(var, r, voi, rand):
                     rand_arr [num] = rand_num
 
                 else:
-                    other = calculate_corr(out['dist_mat'], voi, JB_cor_model)
+                    other = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'])
                     
                     mu = other['Sig12'].T*other['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
                     rand_num = rand[num]
@@ -145,7 +145,7 @@ def main(var, r, voi, rand):
 
 
 
-def calculate_corr(dist_mat, voi, JB_cor_model):
+def calculate_corr(dist_mat, voi, JB_cor_model, var, inc_sta_indices):
     #####
     # Calculates correlation model for distance matrix and voi
     # IN: dist_mat- reduced distance matrix
@@ -154,9 +154,16 @@ def calculate_corr(dist_mat, voi, JB_cor_model):
     #OUT: Sig12, Sig11inv- partitions of correlation matrix
     #     R - Sqrt of sigma
     #####
-
+    intensity_factor = 0.9
     correlation_model = JB_cor_model._get_correlation_model(dist_mat, from_string(voi))
     
+    intensity = var['intensity'][inc_sta_indices]
+    if np.size(intensity) != 0:
+        for i in range(0,np.size(intensity)):
+            if intensity[i] == 1:
+                correlation_model[i,i+1:] = correlation_model[i,i+1:].copy()*intensity_factor
+                correlation_model[i+1:,i] = correlation_model[i+1:,i].copy()*intensity_factor
+
     Sig11 = np.mat(correlation_model[0:-1, 0:-1])
     Sig12 = np.mat(correlation_model[0:-1, -1]).T
     Sig22 = np.mat(correlation_model[-1,-1])
@@ -192,7 +199,6 @@ def inc_stations(j,i,N,K,r,site_collection_SM, site_collection_station, dist_mat
         
     # Find which of those stations are in the radius we are considering
     inc_sta_indices = np.where(dist_sta_sit < r)
-
     if np.size(inc_sta_indices) != 0:
             
         station_distance_matrix = np.zeros([np.size(inc_sta_indices), np.size(inc_sta_indices)+np.size(inc_ind)])

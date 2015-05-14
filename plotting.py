@@ -9,8 +9,16 @@ from matplotlib import cm
 def plot(out, variables, voi, shakemap, stationdata, topofile, ACCUM_ARRAY):
     maxdata = np.amax(out['data_new'])
     attributes = shakemap.getAttributes()
-    station_lons = stationdata['lon']
-    station_lats = stationdata['lat']
+    #station_lons = stationdata['lon']
+    #station_lats = stationdata['lat']
+    intensity = stationdata['name']
+    SM = [i for i, value in enumerate(intensity) if value == 'UNK']
+    IN = [i for i, value in enumerate(intensity) if value == 'DERIVED']
+    sm_station_lons = [stationdata['lon'][j] for j in SM]
+    sm_station_lats = [stationdata['lat'][j] for j in SM]
+    in_station_lats = [stationdata['lat'][j] for j in IN]
+    in_station_lons = [stationdata['lon'][j] for j in IN]
+            
 
     xmin,xmax,ymin,ymax = shakemap.getRange()
     geodict = shakemap.getGeoDict()
@@ -51,8 +59,11 @@ def plot(out, variables, voi, shakemap, stationdata, topofile, ACCUM_ARRAY):
     ax = fig.add_axes([0,0,1.0,1.0])
     shakemappable = m.imshow(COR_masked,cmap=palette)
     plt.autoscale(False)
-    sta_x,sta_y = m(station_lons, station_lats)
-    m.plot(sta_x, sta_y, 'y^', markersize=6)
+    sta_x,sta_y = m(sm_station_lons, sm_station_lats)
+    IN_x, IN_y = m(in_station_lons, in_station_lats)
+    m.plot(IN_x, IN_y, 'g>', markersize = 6)
+    m.plot(sta_x, sta_y, 'r^', markersize=6)
+
     m.drawparallels(np.arange(np.min(variables['location_lat_g']),np.max(variables['location_lat_g']),1),labels=[1,0,0,0], linewidth=0.0)
     m.drawmeridians(np.arange(np.min(variables['location_lon_g']),np.max(variables['location_lon_g']),1),labels=[0,0,0,1], linewidth=0.0)
     locstr = attributes['event']['event_description']
@@ -66,8 +77,11 @@ def plot(out, variables, voi, shakemap, stationdata, topofile, ACCUM_ARRAY):
     ax = fig.add_axes([0,0,1.0,1.0])
     shakemappable = m.imshow(ACCUM_masked,cmap=palette)
     plt.autoscale(False)
-    sta_x,sta_y = m(station_lons, station_lats)
-    m.plot(sta_x, sta_y, 'y^', markersize=6)
+    sta_x,sta_y = m(sm_station_lons, sm_station_lats)
+    IN_x, IN_y = m(in_station_lons, in_station_lats)
+    m.plot(IN_x, IN_y, 'g>', markersize= 6)
+    m.plot(sta_x, sta_y, 'r^', markersize=6)
+
     m.drawparallels(np.arange(np.min(variables['location_lat_g']),np.max(variables['location_lat_g']),1),labels=[1,0,0,0], linewidth=0.0)
     m.drawmeridians(np.arange(np.min(variables['location_lon_g']),np.max(variables['location_lon_g']),1),labels=[0,0,0,1], linewidth=0.0)
     locstr = attributes['event']['event_description']
@@ -81,8 +95,11 @@ def plot(out, variables, voi, shakemap, stationdata, topofile, ACCUM_ARRAY):
     ax = fig.add_axes([0,0,1.0,1.0])
     shakemappable = m.imshow(DATA_masked,cmap=palette)
     plt.autoscale(False)
-    sta_x,sta_y = m(station_lons, station_lats)
-    m.plot(sta_x, sta_y, 'y^', markersize=6)
+    sta_x,sta_y = m(sm_station_lons, sm_station_lats)
+    IN_x, IN_y = m(in_station_lons, in_station_lats)
+    m.plot(IN_x, IN_y, 'g>', markersize= 6)
+    m.plot(sta_x, sta_y, 'r^', markersize=6)
+
 #plt.clim(0,maxdata)
     m.drawparallels(np.arange(np.min(variables['location_lat_g']),np.max(variables['location_lat_g']),1),labels=[1,0,0,0], linewidth=0.0)
     m.drawmeridians(np.arange(np.min(variables['location_lon_g']),np.max(variables['location_lon_g']),1),labels=[0,0,0,1], linewidth=0.0)
@@ -97,8 +114,11 @@ def plot(out, variables, voi, shakemap, stationdata, topofile, ACCUM_ARRAY):
     ax = fig.add_axes([0,0,1.0,1.0])
     shakemappable = m.imshow(DATA_NEW_masked,cmap=palette)
     plt.autoscale(False)
-    sta_x,sta_y = m(station_lons, station_lats)
-    m.plot(sta_x, sta_y, 'y^', markersize=6)
+    sta_x,sta_y = m(sm_station_lons, sm_station_lats)
+    IN_x, IN_y = m(in_station_lons, in_station_lats)
+    m.plot(IN_x, IN_y, 'g>', markersize= 6)
+    m.plot(sta_x, sta_y, 'r^', markersize=6)
+
 #plt.clim(0,maxdata)
     m.drawparallels(np.arange(np.min(variables['location_lat_g']),np.max(variables['location_lat_g']),1),labels=[1,0,0,0], linewidth=0.0)
     m.drawmeridians(np.arange(np.min(variables['location_lon_g']),np.max(variables['location_lon_g']),1),labels=[0,0,0,1], linewidth=0.0)

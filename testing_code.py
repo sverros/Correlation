@@ -37,4 +37,4 @@ def run(r, rand, shakemap, uncertainty, stationdata, variables, voi):
     print 'Calling main'
     outputs = main(variables, r, voi, rand)
 
-    return outputs['data_new']
+    return outputs

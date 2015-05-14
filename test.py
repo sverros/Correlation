@@ -27,13 +27,13 @@ r = 6
 
 # Get shakemap for desired variable, PGA, uncertainty grid and stationdata                                                                                                                   
 # Selected Stations: Units in pctg                                                                                                                                                           
-shakemap = ShakeGrid('/Users/sverros/Documents/Reduced_output/grid.xml', variable = '%s' % voi)
+shakemap = ShakeGrid('/Users/sverros/Documents/output.all.sta/grid.xml', variable = '%s' % voi)
 
 # Uncertainty Data: Units in ln(pctg)                                                                                                                                                        
-uncertainty = ShakeGrid('/Users/sverros/Documents/Reduced_output/uncertainty.xml', variable= 'STD%s' % voi)
+uncertainty = ShakeGrid('/Users/sverros/Documents/output.all.sta/uncertainty.xml', variable= 'STD%s' % voi)
 
 # Station Data: Units in pctg                                                                                                                                                                
-stationlist = '/Users/sverros/Documents/Reduced_output/stationlist.xml'
+stationlist = '/Users/sverros/Documents/output.all.sta/stationlist.xml'
 stationdata = readStation(stationlist)
 
 # Used for plotting 

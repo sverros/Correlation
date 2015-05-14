@@ -64,6 +64,7 @@ def initialize(shakemap, uncertainty, stationdata, dm=1, dn=1):
     # Store lat lon points                                                                                                                                                     
     location_lat_s = np.empty([K])
     location_lon_s = np.empty([K])
+    intensity = np.empty([K])
     site_station = []
 
     # Puts stationdata into Site class, then turns the sites into a SiteCollection                                                                                                  
@@ -71,6 +72,11 @@ def initialize(shakemap, uncertainty, stationdata, dm=1, dn=1):
 
         location_lat_s[i] = stationdata['lat'][i]
         location_lon_s[i] = stationdata['lon'][i]
+
+        if stationdata['name'][i] == 'DERIVED':
+            intensity[i] = 1
+        else:
+            intensity[i] = 0
 
         site = Site(location=Point(location_lon_s[i], location_lat_s[i]),
                     vs30 = 760, vs30measured = False, z1pt0 = 100, z2pt5 = 1)
@@ -82,5 +88,5 @@ def initialize(shakemap, uncertainty, stationdata, dm=1, dn=1):
     print '\tInitialization Time:', end
     
     return {'M': M, 'N': N, 'K': K, 'uncertaintydata':uncertaintydata, 'site_collection_SM':site_collection_SM, 'site_collection_station':site_collection_station, 
-            'location_lat_g': location_lat_g, 'location_lon_g':location_lon_g, 'data':DATA}
+            'location_lat_g': location_lat_g, 'location_lon_g':location_lon_g, 'data':DATA, 'intensity':intensity}
     
