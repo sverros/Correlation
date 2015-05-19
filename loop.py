@@ -13,7 +13,7 @@ from openquake.hazardlib.geo import Point
 from openquake.hazardlib.geo.geodetic import geodetic_distance
 from openquake.hazardlib.imt import from_string
 import time
-from mpl_toolkits.basemap import Basemap
+#from mpl_toolkits.basemap import Basemap
 from matplotlib import cm
 from neicio.gmt import GMTGrid
 import time
@@ -133,7 +133,7 @@ def main(var, r, voi, rand, intensity_factor):
     #Multiply by uncertainty                                                                                                   
     X = np.multiply(COR, var['uncertaintydata']) # ln(pctg)
                 
-    DATA_NEW = DATA*np.exp(X)
+    DATA_NEW = np.multiply(DATA,np.exp(X))
     
     end = time.time() - start
     print 'Total Time', end

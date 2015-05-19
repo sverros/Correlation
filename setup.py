@@ -50,7 +50,7 @@ def initialize(shakemap, uncertainty, stationdata, dm=1, dn=1):
             location_lon_g[i,j] = lon
 
             site= Site(location=Point(location_lon_g[i,j],location_lat_g[i,j]),
-                       vs30 = 760, vs30measured=False, z1pt0=100, z2pt5=1)
+                       vs30 = 760, vs30measured=True, z1pt0=100, z2pt5=1)
             site_SM.append(site)                                                                                                                                
 
             uncertaintydata[i,j] = uncertainty.griddata[i*dm,j*dn] # UNITS ln(pctg)                                                                                          
@@ -79,14 +79,17 @@ def initialize(shakemap, uncertainty, stationdata, dm=1, dn=1):
             intensity[i] = 0
 
         site = Site(location=Point(location_lon_s[i], location_lat_s[i]),
-                    vs30 = 760, vs30measured = False, z1pt0 = 100, z2pt5 = 1)
+                    vs30 = 760, vs30measured = True, z1pt0 = 100, z2pt5 = 1)
         site_station.append(site)
 
     site_collection_station = SiteCollection(site_station)
+
+    site_both = site_station + site_SM
+    site_collection_both = SiteCollection(site_both)
     
     end = time.time() - start
     print '\tInitialization Time:', end
     
     return {'M': M, 'N': N, 'K': K, 'uncertaintydata':uncertaintydata, 'site_collection_SM':site_collection_SM, 'site_collection_station':site_collection_station, 
-            'location_lat_g': location_lat_g, 'location_lon_g':location_lon_g, 'data':DATA, 'intensity':intensity}
+            'location_lat_g': location_lat_g, 'location_lon_g':location_lon_g, 'data':DATA, 'intensity':intensity, 'site_collection_both':site_collection_both}
     
