@@ -91,7 +91,6 @@ def main(var, r, voi, rand, intensity_factor):
                 mu_arr   [num] = np.zeros(0)
                 sigma_arr[num] = 1
                 rand_arr [num] = X[num]
-
             else:
                 # Check if reduced distance matrix is full distance matrix
                 if ((vhva['vert'] == 1 and dist_calc['num_indices'] == vhva['hor']+1)or(vhva['vert'] != 1 and \
@@ -101,7 +100,9 @@ def main(var, r, voi, rand, intensity_factor):
                         base = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], intensity_factor)
                         first_time_per_row = 0
 
-                    mu  = base['Sig12'].T*base['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
+                    #mu  = base['Sig12'].T*base['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
+                    mu  = base['Sig12'].T*base['Sig11inv']*(out['x'])
+                    
                     rand_num = rand[num]
                     X[num] = mu+rand_num*base['R']
 
@@ -114,7 +115,8 @@ def main(var, r, voi, rand, intensity_factor):
                 else:
                     other = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], intensity_factor)
                     
-                    mu = other['Sig12'].T*other['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
+                    #mu = other['Sig12'].T*other['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
+                    mu = other['Sig12'].T*other['Sig11inv']*(out['x'])
                     rand_num = rand[num]
                     X[num] = mu+rand_num*other['R']
 
@@ -375,7 +377,7 @@ def calc_vert_hor(i, r, l, d):
         vert += 1
     
     # adjusts for the unincluded rows
-    if i > vert:
+    if i+1 > vert:
         added_vert = i - vert+1
     else:
         added_vert = 0

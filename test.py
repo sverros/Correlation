@@ -33,7 +33,7 @@ stationlist = '/Users/sverros/Documents/Northridge_Outputs/output.all.sta/statio
 stationdata = readStation(stationlist)
 
 print 'Calling initialize'
-variables = initialize(shakemap, uncertainty, stationdata)
+variables = initialize(shakemap, uncertainty, stationdata, True)
 print 'Calling main'
 rand = np.random.randn(variables['N']*variables['M'])
 outputs = main(variables, r, voi, rand, intensity_factor)

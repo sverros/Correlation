@@ -40,6 +40,10 @@ def plot(out, variables, voi, shakemap, stationdata, ACCUM_ARRAY):
     th = plt.title('Correlation Matrix for %s - %s M%.1f, (epsilon)' % (locstr,datestr,mag), y = 1.08)
     ch=plt.colorbar(map, shrink=0.7)
     plt.show(map)
+    plt.savefig('fig1.png', 
+        orientation='portrait', papertype=None, format='png',
+        transparent=False, bbox_inches=None, pad_inches=0.1,
+        frameon=None)
 
     fig = plt.figure(figsize = (10,10))
     proj = cartopy.crs.PlateCarree()

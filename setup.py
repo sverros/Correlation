@@ -5,7 +5,7 @@ from openquake.hazardlib.geo import Point
 import time
 
 
-def initialize(shakemap, uncertainty, stationdata, dm=1, dn=1):
+def initialize(shakemap, uncertainty, stationdata, vscorr, dm=1, dn=1):
     #####
     # Set up grid spacing, site collections, and other data values
     # IN: shakemap- shake grid of grid.xml
@@ -50,7 +50,7 @@ def initialize(shakemap, uncertainty, stationdata, dm=1, dn=1):
             location_lon_g[i,j] = lon
 
             site= Site(location=Point(location_lon_g[i,j],location_lat_g[i,j]),
-                       vs30 = 760, vs30measured=True, z1pt0=100, z2pt5=1)
+                       vs30 = 760, vs30measured=vscorr, z1pt0=100, z2pt5=1)
             site_SM.append(site)                                                                                                                                
 
             uncertaintydata[i,j] = uncertainty.griddata[i*dm,j*dn] # UNITS ln(pctg)                                                                                          
@@ -79,7 +79,7 @@ def initialize(shakemap, uncertainty, stationdata, dm=1, dn=1):
             intensity[i] = 0
 
         site = Site(location=Point(location_lon_s[i], location_lat_s[i]),
-                    vs30 = 760, vs30measured = True, z1pt0 = 100, z2pt5 = 1)
+                    vs30 = 760, vs30measured = vscorr, z1pt0 = 100, z2pt5 = 1)
         site_station.append(site)
 
     site_collection_station = SiteCollection(site_station)
