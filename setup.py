@@ -48,14 +48,11 @@ def initialize(shakemap, uncertainty, stationdata, vscorr, dm=1, dn=1):
             lat,lon = shakemap.getLatLon(i*dm,j*dn)
             location_lat_g[i,j] = lat
             location_lon_g[i,j] = lon
-
-            site= Site(location=Point(location_lon_g[i,j],location_lat_g[i,j]),
-                       vs30 = 760, vs30measured=vscorr, z1pt0=100, z2pt5=1)
-            site_SM.append(site)                                                                                                                                
-
             uncertaintydata[i,j] = uncertainty.griddata[i*dm,j*dn] # UNITS ln(pctg)                                                                                          
+            
 
-    # site_collection_SM is the Site Collection for the ShakeMap grid points                                                                                                
+            site_SM.append(Site(Point(location_lon_g[i,j], location_lat_g[i,j]), 760, vscorr, 100, 1))
+
     site_collection_SM = SiteCollection(site_SM)
 
     # Determine number of stations                                                                                                                            
@@ -81,7 +78,7 @@ def initialize(shakemap, uncertainty, stationdata, vscorr, dm=1, dn=1):
         site = Site(location=Point(location_lon_s[i], location_lat_s[i]),
                     vs30 = 760, vs30measured = vscorr, z1pt0 = 100, z2pt5 = 1)
         site_station.append(site)
-
+    
     site_collection_station = SiteCollection(site_station)
 
     site_both = site_station + site_SM

@@ -7,18 +7,19 @@ import datetime
 from neicio.readstation import readStation
 from neicio.shake import ShakeGrid
 from openquake.hazardlib.correlation import JB2009CorrelationModel
+from openquake.hazardlib.correlation import GA2010CorrelationModel
 from openquake.hazardlib.correlation import BaseCorrelationModel
 from openquake.hazardlib.site import Site, SiteCollection
 from openquake.hazardlib.geo import Point
 from openquake.hazardlib.geo.geodetic import geodetic_distance
 from openquake.hazardlib.imt import from_string
 import time
-#from mpl_toolkits.basemap import Basemap
 from matplotlib import cm
 from neicio.gmt import GMTGrid
 import time
-
+import sys
 def main(var, r, voi, rand, intensity_factor):
+    np.set_printoptions(linewidth = 200)
     #####
     # Main program for computing spatial correlation
     # IN: var- variables dictionary from initialize function. Contains M,N,K,site_collection_SM, site_collection_station
@@ -36,7 +37,14 @@ def main(var, r, voi, rand, intensity_factor):
     start = time.time()    
     OL_time = 0
     IL_time = 0
-
+    full_dist_time = 0
+    out_t = 0
+    red_dist = 0
+    base_time = 0
+    base_t = 0
+    other_time = 0
+    other_t = 0
+    corr_time = 0
     M = var['M']
     N = var['N']
     K = var['K']
@@ -64,22 +72,30 @@ def main(var, r, voi, rand, intensity_factor):
         # Find the number of points in radius horozontally and vertically for each row
         vhva = calc_vert_hor(i, r, ld['l'], ld['d'])
         
+        full_dist_t = time.time()
         # Calculate the full distance matrix for each row
         dist = calc_full_dist(vhva['vert'], vhva['hor'], N, var['site_collection_SM'])
-
+        full_dist_time += time.time() - full_dist_t
+        
         first_time_per_row = 1
 
         OL_time += time.time() - OL_start
         for j in range(0,N):
             IL_start = time.time()
             num = i*N+j
-            
+        
+            t = time.time()
             # Find the reduced distance matrix 
             dist_calc = reduce_distance(j, vhva['vert'], vhva['hor'], vhva['added_vert'], N, dist['distance_matrix'], dist['grid_indices'])
 
+            red_dist += time.time() - t
+
+            t = time.time()
             # Include stations in distance matrix and find the indices of the points within the radius
             out = inc_stations(j, i, N, K, r, var['site_collection_SM'], var['site_collection_station'], 
                                dist_calc['dist_mat'], X, dist_calc['inc_ind'], dist_calc['inc_indices'])
+
+            out_t += time.time() - t
 
             if np.size(dist_calc['inc_indices']) == 1:
 
@@ -97,10 +113,11 @@ def main(var, r, voi, rand, intensity_factor):
                        dist_calc['num_indices'] == 2*vhva['hor']+1)) and (np.size(out['inc_sta_indices']) == 0):
                     # If this is the first full distance matrix per row, calculate base case
                     if first_time_per_row == 1:
+                        t = time.time()
                         base = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], intensity_factor)
                         first_time_per_row = 0
-
-                    #mu  = base['Sig12'].T*base['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
+                        base_time += time.time() - t
+                    t = time.time()
                     mu  = base['Sig12'].T*base['Sig11inv']*(out['x'])
                     
                     rand_num = rand[num]
@@ -111,11 +128,13 @@ def main(var, r, voi, rand, intensity_factor):
                     mu_arr   [num] = base['Sig12'].T*base['Sig11inv']
                     sigma_arr[num] = base['R']
                     rand_arr [num] = rand_num
-
+                    base_t += time.time() - t
                 else:
+                    t = time.time()
                     other = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], intensity_factor)
-                    
+                    other_time += time.time() - t
                     #mu = other['Sig12'].T*other['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
+                    t = time.time()
                     mu = other['Sig12'].T*other['Sig11inv']*(out['x'])
                     rand_num = rand[num]
                     X[num] = mu+rand_num*other['R']
@@ -125,24 +144,30 @@ def main(var, r, voi, rand, intensity_factor):
                     mu_arr   [num] = other['Sig12'].T*other['Sig11inv']
                     sigma_arr[num] = other['R']
                     rand_arr [num] = rand_num
-
+                    other_t += time.time()-t
             IL_time += time.time() - IL_start
             if np.mod(i*N+j,5000) == 0:
                 print 'Finishing step:', i*N+j
+                sys.stdout.flush()
 
     DATA = var['data']
     COR = np.reshape(X, [M,N]) #units epsilon
     #Multiply by uncertainty                                                                                                   
     X = np.multiply(COR, var['uncertaintydata']) # ln(pctg)
                 
-    DATA_NEW = np.multiply(DATA,np.exp(X))
-    
+    DATA_NEW = np.log(DATA) + X
+    DATA_NEW = np.exp(DATA_NEW)
+
     end = time.time() - start
     print 'Total Time', end
+    sys.stdout.flush()
     print 'Pre loop Time', pre_loop_time
     print 'Inner loop time', IL_time
     print 'Outer loop time', OL_time
-
+    print 'Reduced Dist', red_dist
+    print 'out fn', out_t
+    print 'base_time', base_time, base_t
+    print 'other time', other_time, other_t
     return {'cor':COR, 'data':DATA, 'data_new':DATA_NEW, 'grid_arr':grid_arr, 'mu_arr':mu_arr, 'sigma_arr':sigma_arr, 'rand_arr':rand_arr}
 
 
@@ -218,7 +243,7 @@ def inc_stations(j,i,N,K,r,site_collection_SM, site_collection_station, dist_mat
         # Concatenate the station distance matrix with the modified distance matrix, dist_mat
         dist_mat = np.concatenate((station_distance_matrix[:, np.size(inc_sta_indices):], dist_mat), axis=0)
         dist_mat = np.concatenate((station_distance_matrix.T, dist_mat), axis=1)
-            
+
         # x: vector of previously calculated covariance values
         x = np.concatenate((np.zeros([np.size(inc_sta_indices),1]),X[inc_ind,0]), axis = 0)
         x = np.mat(x[0:-1])

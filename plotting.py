@@ -40,10 +40,27 @@ def plot(out, variables, voi, shakemap, stationdata, ACCUM_ARRAY):
     th = plt.title('Correlation Matrix for %s - %s M%.1f, (epsilon)' % (locstr,datestr,mag), y = 1.08)
     ch=plt.colorbar(map, shrink=0.7)
     plt.show(map)
-    plt.savefig('fig1.png', 
-        orientation='portrait', papertype=None, format='png',
-        transparent=False, bbox_inches=None, pad_inches=0.1,
-        frameon=None)
+
+    fig = plt.figure(figsize = (10,10))
+    proj = cartopy.crs.PlateCarree()
+    ax = plt.axes(projection=proj)
+    cartopy.feature.COASTLINE.scale = '50m'
+    cartopy.feature.LAND.scale = '50m'
+    cartopy.feature.OCEAN.scale = '50m'
+    ax.add_feature(cartopy.feature.OCEAN,facecolor=WATER_COLOR)
+    ax.add_feature(cartopy.feature.COASTLINE)
+    ax.add_feature(cartopy.feature.BORDERS, linestyle=':',zorder=10)
+    ax.gridlines(crs=proj, draw_labels=True, linestyle='-')
+    ax.set_extent(shakemap.getRange())
+    map = ax.imshow(out['data'],extent=shakemap.getRange(), origin='upper',cmap=palette)
+    plt.plot(sm_station_lons, sm_station_lats, 'g>', markersize = 6)
+    plt.plot(in_station_lons, in_station_lats, 'r^', markersize = 6)
+    locstr = attributes['event']['event_description']
+    mag = attributes['event']['magnitude']
+    datestr = attributes['event']['event_timestamp'].strftime('%b %d, %Y %H:%M:%S')
+    th = plt.title('ShakeMap for %s - %s M%.1f, (epsilon)' % (locstr,datestr,mag), y = 1.08)
+    ch=plt.colorbar(map, shrink=0.7)
+    plt.show(map)
 
     fig = plt.figure(figsize = (10,10))
     proj = cartopy.crs.PlateCarree()
@@ -66,6 +83,7 @@ def plot(out, variables, voi, shakemap, stationdata, ACCUM_ARRAY):
     ch=plt.colorbar(map, shrink=0.7)
     plt.show(map)
 
+
     fig = plt.figure(figsize = (10,10))
     proj = cartopy.crs.PlateCarree()
     ax = plt.axes(projection=proj)
@@ -77,13 +95,13 @@ def plot(out, variables, voi, shakemap, stationdata, ACCUM_ARRAY):
     ax.add_feature(cartopy.feature.BORDERS, linestyle=':',zorder=10)
     ax.gridlines(crs=proj, draw_labels=True, linestyle='-')
     ax.set_extent(shakemap.getRange())
-    map = ax.imshow(out['data'],extent=shakemap.getRange(), origin='upper',cmap=palette)
+    map = ax.imshow(ACCUM_ARRAY,extent=shakemap.getRange(), origin='upper',cmap=palette)
     plt.plot(sm_station_lons, sm_station_lats, 'g>', markersize = 6)
     plt.plot(in_station_lons, in_station_lats, 'r^', markersize = 6)
     locstr = attributes['event']['event_description']
     mag = attributes['event']['magnitude']
     datestr = attributes['event']['event_timestamp'].strftime('%b %d, %Y %H:%M:%S')
-    th = plt.title('ShakeMap for %s - %s M%.1f, (epsilon)' % (locstr,datestr,mag), y = 1.08)
+    th = plt.title('Accumulated Matrix for %s - %s M%.1f, (epsilon)' % (locstr,datestr,mag), y = 1.08)
     ch=plt.colorbar(map, shrink=0.7)
     plt.show(map)
 

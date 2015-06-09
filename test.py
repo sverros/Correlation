@@ -17,25 +17,26 @@ from Correlation.plotting import plot
 # Variable of interest                                                                                                                                                                       
 voi = 'PGA'
 # Specify the radius of interest
-r = 6
+r = 15
 
 intensity_factor = 0.9
 num_realizations = 1
 # Get shakemap for desired variable, PGA, uncertainty grid and stationdata                                                                                                                   
 # Selected Stations: Units in pctg                                                                                                                                                           
-shakemap = ShakeGrid('/Users/sverros/Documents/Northridge_Outputs/output.all.sta/grid.xml', variable = '%s' % voi)
+shakemap = ShakeGrid('/Users/sverros/Documents/Modules/Correlation/Inputs/grid.xml', variable = '%s' % voi)
 
 # Uncertainty Data: Units in ln(pctg)                                                                                                                                                        
-uncertainty = ShakeGrid('/Users/sverros/Documents/Northridge_Outputs/output.all.sta/uncertainty.xml', variable= 'STD%s' % voi)
+uncertainty = ShakeGrid('/Users/sverros/Documents/Modules/Correlation/Inputs/uncertainty.xml', variable= 'STD%s' % voi)
 
 # Station Data: Units in pctg                                                                                                                                                                
-stationlist = '/Users/sverros/Documents/Northridge_Outputs/output.all.sta/stationlist.xml'
+stationlist = '/Users/sverros/Documents/Modules/Correlation/Inputs/stationlist.xml'
 stationdata = readStation(stationlist)
 
 print 'Calling initialize'
 variables = initialize(shakemap, uncertainty, stationdata, True)
 print 'Calling main'
 rand = np.random.randn(variables['N']*variables['M'])
+#rand = np.ones(variables['N']*variables['M'])
 outputs = main(variables, r, voi, rand, intensity_factor)
 
 ACCUM_ARRAY = realizations(num_realizations, variables['N'], variables['M'], outputs['grid_arr'], 
