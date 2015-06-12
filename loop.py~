@@ -7,6 +7,7 @@ import datetime
 from neicio.readstation import readStation
 from neicio.shake import ShakeGrid
 from openquake.hazardlib.correlation import JB2009CorrelationModel
+from openquake.hazardlib.correlation import GA2010CorrelationModel
 from openquake.hazardlib.correlation import BaseCorrelationModel
 from openquake.hazardlib.site import Site, SiteCollection
 from openquake.hazardlib.geo import Point
