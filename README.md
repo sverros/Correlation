@@ -16,6 +16,7 @@ http://www.github.com/usgs/neicio
 hazardlib, the openquake hazard library. May be found on GitHub
 https://github.com/gem/oq-hazardlib
 
-basemap, for plotting http://matplotlib.org/basemap/
+cartopy, a plotting tool. Install using
+conda install -c ioos cartopy
 
 This implementation was written using Anaconda and uses ipython notebook
