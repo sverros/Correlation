@@ -7,7 +7,6 @@ import datetime
 from neicio.readstation import readStation
 from neicio.shake import ShakeGrid
 from openquake.hazardlib.correlation import JB2009CorrelationModel
-from openquake.hazardlib.correlation import GA2010CorrelationModel
 from openquake.hazardlib.correlation import BaseCorrelationModel
 from openquake.hazardlib.site import Site, SiteCollection
 from openquake.hazardlib.geo import Point
@@ -18,7 +17,7 @@ from matplotlib import cm
 from neicio.gmt import GMTGrid
 import time
 import sys
-def main(var, r, voi, rand, intensity_factor):
+def main(var, r, voi, rand, vscorr, intensity_factor):
     np.set_printoptions(linewidth = 200)
     #####
     # Main program for computing spatial correlation
@@ -26,6 +25,8 @@ def main(var, r, voi, rand, intensity_factor):
     #          uncertaintydata, data, location_lon/lat_g
     #     r - radius
     #     voi- variable of interest, i.e. PGA
+    #     rand- normally distributed random variable of size var['M']*var['N']
+    #     vscorr- boolean, whether vs30 is correlated or uncorrelated
     #OUT: cor- grid of spatially correlated epsilon
     #     data- grid of ShakeMap data
     #     data_new- data with added spatial correlation
@@ -49,8 +50,8 @@ def main(var, r, voi, rand, intensity_factor):
     N = var['N']
     K = var['K']
 
-    cor_model = BaseCorrelationModel
-    JB_cor_model = JB2009CorrelationModel(cor_model)
+
+    JB_cor_model = JB2009CorrelationModel(vscorr)
 
     # Initialize vector where data_new will be stored
     X = np.zeros([M*N,1])
@@ -75,6 +76,7 @@ def main(var, r, voi, rand, intensity_factor):
         full_dist_t = time.time()
         # Calculate the full distance matrix for each row
         dist = calc_full_dist(vhva['vert'], vhva['hor'], N, var['site_collection_SM'])
+
         full_dist_time += time.time() - full_dist_t
         
         first_time_per_row = 1
@@ -87,7 +89,7 @@ def main(var, r, voi, rand, intensity_factor):
             t = time.time()
             # Find the reduced distance matrix 
             dist_calc = reduce_distance(j, vhva['vert'], vhva['hor'], vhva['added_vert'], N, dist['distance_matrix'], dist['grid_indices'])
-
+            
             red_dist += time.time() - t
 
             t = time.time()
@@ -366,6 +368,8 @@ def calc_full_dist(vert, hor, N, site_collection_SM):
                 grid_indices[n_grid_indices] = [j + N*k]
                 n_grid_indices += 1 
     del grid_indices[n_grid_indices:]
+
+    print grid_indices
 
     distance_matrix = np.zeros([np.size(grid_indices), np.size(grid_indices)])
     grid_indices = np.vstack(grid_indices)

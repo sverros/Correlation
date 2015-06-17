@@ -25,13 +25,13 @@ num_realizations = 0
 vscorr = True
 # Get shakemap for desired variable, PGA, uncertainty grid and stationdata                                                                                                                   
 # Selected Stations: Units in pctg                                                                                                                                                           
-shakemap = ShakeGrid('Inputs/grid.xml', variable = '%s' % voi)
+shakemap = ShakeGrid('/Users/sverros/Documents/Modules/Correlation/Inputs/grid.xml', variable = '%s' % voi)
 
 # Uncertainty Data: Units in ln(pctg)                                                                                                                                                        
-uncertainty = ShakeGrid('Inputs/uncertainty.xml', variable= 'STD%s' % voi)
+uncertainty = ShakeGrid('/Users/sverros/Documents/Modules/Correlation/Inputs/uncertainty.xml', variable= 'STD%s' % voi)
 
 # Station Data: Units in pctg                                                                                                                                                                
-stationlist = 'Inputs/stationlist.xml'
+stationlist = '/Users/sverros/Documents/Modules/Correlation/Inputs/stationlist.xml'
 stationdata = readStation(stationlist)
 
 print 'Calling initialize'
