@@ -16,19 +16,15 @@ import time
 from matplotlib import cm
 from neicio.gmt import GMTGrid
 import time
-import sys
 
-
-def main(var, r, voi, rand, vscorr, intensity_factor):
-    np.set_printoptions(linewidth = 200)
+def main(var, r, voi, rand, vs_corr, intensity_factor):
     #####
     # Main program for computing spatial correlation
-    # IN: var- variables dictionary from initialize function. Contains M,N,K,site_collection_SM, site_collection_station
+    # IN: var- variables dictionary from initialize function. Contains M,N,K,site_collection_SM, 
+    # site_collection_station
     #          uncertaintydata, data, location_lon/lat_g
     #     r - radius
     #     voi- variable of interest, i.e. PGA
-    #     rand- normally distributed random variable of size var['M']*var['N']
-    #     vscorr- boolean, whether vs30 is correlated or uncorrelated
     #OUT: cor- grid of spatially correlated epsilon
     #     data- grid of ShakeMap data
     #     data_new- data with added spatial correlation
@@ -40,20 +36,12 @@ def main(var, r, voi, rand, vscorr, intensity_factor):
     start = time.time()    
     OL_time = 0
     IL_time = 0
-    full_dist_time = 0
-    out_t = 0
-    red_dist = 0
-    base_time = 0
-    base_t = 0
-    other_time = 0
-    other_t = 0
-    corr_time = 0
+
     M = var['M']
     N = var['N']
     K = var['K']
 
-
-    JB_cor_model = JB2009CorrelationModel(vscorr)
+    JB_cor_model = JB2009CorrelationModel(vs_corr)
 
     # Initialize vector where data_new will be stored
     X = np.zeros([M*N,1])
@@ -70,40 +58,34 @@ def main(var, r, voi, rand, vscorr, intensity_factor):
     pre_loop_time = time.time() - start
 
     for i in range(0,M):
+
         OL_start = time.time()
         
         # Find the number of points in radius horozontally and vertically for each row
         vhva = calc_vert_hor(i, r, ld['l'], ld['d'])
-        full_dist_t = time.time()
 
         # Calculate the full distance matrix for each row
- 
         dist = calc_full_dist(vhva['vert'], vhva['hor'], N, var['site_collection_SM'])
-        full_dist_time += time.time() - full_dist_t
+
         first_time_per_row = 1
+
         OL_time += time.time() - OL_start
         for j in range(0,N):
             IL_start = time.time()
             num = i*N+j
-        
-            t = time.time()
+            
             # Find the reduced distance matrix 
-            dist_calc = reduce_distance(j, vhva['vert'], vhva['hor'], N, dist['distance_matrix'], dist['grid_indices'], num)
-            
-            red_dist += time.time() - t
-            
-            t = time.time()
+            dist_calc = reduce_distance(j, vhva['vert'], vhva['hor'], vhva['added_vert'], N, dist['distance_matrix'], dist['grid_indices'])
+
             # Include stations in distance matrix and find the indices of the points within the radius
             out = inc_stations(j, i, N, K, r, var['site_collection_SM'], var['site_collection_station'], 
-                               dist_calc['dist_mat'], X, dist_calc['inc_indices'])
-            
-            out_t += time.time() - t
-            
+                               dist_calc['dist_mat'], X, dist_calc['inc_ind'], dist_calc['inc_indices'])
+
             if np.size(dist_calc['inc_indices']) == 1:
-            
+
                 # no conditioning points, correlation value is random                                                                                          
                 X[num] = rand[num]
-            
+
                 # Store for multiple realizations                                                                                                                 
                 grid_arr [num] = np.zeros(0)
                 mu_arr   [num] = np.zeros(0)
@@ -111,74 +93,63 @@ def main(var, r, voi, rand, vscorr, intensity_factor):
                 rand_arr [num] = X[num]
             else:
                 # Check if reduced distance matrix is full distance matrix
-#                if ((vhva['vert'] == 1 and dist_calc['num_indices'] == vhva['hor']+1)or(vhva['vert'] != 1 and \
-#                       dist_calc['num_indices'] == 2*vhva['hor']+1)) and (np.size(out['inc_sta_indices']) == 0):
-#                    # If this is the first full distance matrix per row, calculate base case
-#                    if first_time_per_row == 1:
-#                        t = time.time()
-#                        base = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], intensity_factor)
-#                        first_time_per_row = 0
-#                        base_time += time.time() - t
-#                    t = time.time()
-#                    mu  = base['Sig12'].T*base['Sig11inv']*(out['x'])
-#                    
-#                    rand_num = rand[num]
-#                    X[num] = mu+rand_num*base['R']
-#            
-#                    # Store for multiple realizations                                                                                                       
-#                    grid_arr [num] = dist_calc['inc_ind'][0:-1]
-#                    mu_arr   [num] = base['Sig12'].T*base['Sig11inv']
-#                    sigma_arr[num] = base['R']
-#                    rand_arr [num] = rand_num
-#                    base_t += time.time() - t
-#                else:
-                t = time.time()
-#                other = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], intensity_factor)
-                other = calculate_corr(dist_calc['dist_mat'], voi, JB_cor_model, var, [], intensity_factor)
-                other_time += time.time() - t
-                    #mu = other['Sig12'].T*other['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
-                t = time.time()
-#                mu = other['Sig12'].T*other['Sig11inv']*(out['x'])
-                x = X[dist_calc['inc_indices'][0:-1]]
-                mu = other['Sig12'].T*other['Sig11inv']*x
+                if ((vhva['vert'] == 1 and dist_calc['num_indices'] == vhva['hor']+1)or(vhva['vert'] != 1 and \
+                       dist_calc['num_indices'] == 2*vhva['hor']+1)) and (np.size(out['inc_sta_indices']) == 0):
+                    # If this is the first full distance matrix per row, calculate base case
+                    if first_time_per_row == 1:
+                        base = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], num, intensity_factor)
+                        first_time_per_row = 0
 
-                rand_num = rand[num]
-                X[num] = mu+rand_num*other['R']
-                
+                    #mu  = base['Sig12'].T*base['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
+                    mu  = base['Sig12'].T*base['Sig11inv']*(out['x'])
+                    
+                    rand_num = rand[num]
+                    X[num] = mu+rand_num*base['R']
+
+                    # Store for multiple realizations                                                                                                       
+                    grid_arr [num] = dist_calc['inc_ind'][0:-1]
+                    mu_arr   [num] = base['Sig12'].T*base['Sig11inv']
+                    sigma_arr[num] = base['R']
+                    rand_arr [num] = rand_num
+
+                else:
+                    other = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], num, intensity_factor)
+                    
+                    #mu = other['Sig12'].T*other['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
+                    mu = other['Sig12'].T*other['Sig11inv']*(out['x'])
+                    rand_num = rand[num]
+                    X[num] = mu+rand_num*other['R']
+
+
+
                     # Store for multiple realizations                                                                             
-                grid_arr [num] = dist_calc['inc_indices'][0:-1]
-                mu_arr   [num] = other['Sig12'].T*other['Sig11inv']
-                sigma_arr[num] = other['R']
-                rand_arr [num] = rand_num
-                other_t += time.time()-t
+                    grid_arr [num] = dist_calc['inc_ind'][0:-1]
+                    mu_arr   [num] = other['Sig12'].T*other['Sig11inv']
+                    sigma_arr[num] = other['R']
+                    rand_arr [num] = rand_num
+            
             IL_time += time.time() - IL_start
             if np.mod(i*N+j,5000) == 0:
                 print 'Finishing step:', i*N+j
-                sys.stdout.flush()
 
     DATA = var['data']
     COR = np.reshape(X, [M,N]) #units epsilon
     #Multiply by uncertainty                                                                                                   
     X = np.multiply(COR, var['uncertaintydata']) # ln(pctg)
                 
-    DATA_NEW = np.log(DATA) + X
-    DATA_NEW = np.exp(DATA_NEW)
-
+    DATA_NEW = np.multiply(DATA,np.exp(X))
+    
     end = time.time() - start
     print 'Total Time', end
-    sys.stdout.flush()
     print 'Pre loop Time', pre_loop_time
     print 'Inner loop time', IL_time
     print 'Outer loop time', OL_time
-    print 'Reduced Dist', red_dist
-    print 'out fn', out_t
-    print 'base_time', base_time, base_t
-    print 'other time', other_time, other_t
+
     return {'cor':COR, 'data':DATA, 'data_new':DATA_NEW, 'grid_arr':grid_arr, 'mu_arr':mu_arr, 'sigma_arr':sigma_arr, 'rand_arr':rand_arr}
 
 
 
-def calculate_corr(dist_mat, voi, JB_cor_model, var, inc_sta_indices, intensity_factor = 0.9):
+def calculate_corr(dist_mat, voi, JB_cor_model, var, inc_sta_indices, num, intensity_factor = 0.9):
     #####
     # Calculates correlation model for distance matrix and voi
     # IN: dist_mat- reduced distance matrix
@@ -189,12 +160,12 @@ def calculate_corr(dist_mat, voi, JB_cor_model, var, inc_sta_indices, intensity_
     #####
     correlation_model = JB_cor_model._get_correlation_model(dist_mat, from_string(voi))
     
-    intensity = var['intensity'][inc_sta_indices]
-    if np.size(intensity) != 0:
-        for i in range(0,np.size(intensity)):
-            if intensity[i] == 1:
-                correlation_model[i,i+1:] = correlation_model[i,i+1:].copy()*intensity_factor
-                correlation_model[i+1:,i] = correlation_model[i+1:,i].copy()*intensity_factor
+#    intensity = var['intensity'][inc_sta_indices]
+#    if np.size(intensity) != 0:
+#        for i in range(0,np.size(intensity)):
+#            if intensity[i] == 1:
+#                correlation_model[i,i+1:] = correlation_model[i,i+1:].copy()*intensity_factor
+#                correlation_model[i+1:,i] = correlation_model[i+1:,i].copy()*intensity_factor
 
     Sig11 = np.mat(correlation_model[0:-1, 0:-1])
     Sig12 = np.mat(correlation_model[0:-1, -1]).T
@@ -202,11 +173,23 @@ def calculate_corr(dist_mat, voi, JB_cor_model, var, inc_sta_indices, intensity_
 
     Sig11inv = np.mat(np.linalg.pinv(Sig11))
     sigma = Sig22 - (Sig12.T*Sig11inv*Sig12)
-    R = np.sqrt(sigma)
+
+    if sigma < 0:
+        print 'SOMETHING WRONG'
+
+    R = np.sqrt(max(sigma, 2e-16))
+
+
+#    if (19000 < num)and(num < 19030):
+#        print 'Sig11', Sig11
+#        print 'Sig11inv', Sig11inv
+#        print 'Sig12', Sig12
+#        print 'Sig22', Sig22
+#        print 'sigma', sigma
     
     return {'Sig12':Sig12, 'Sig11inv':Sig11inv, 'R':R}
 
-def inc_stations(j,i,N,K,r,site_collection_SM, site_collection_station, dist_mat, X, inc_indices):
+def inc_stations(j,i,N,K,r,site_collection_SM, site_collection_station, dist_mat, X, inc_ind, inc_indices):
     #####
     # If there are stations included within the radius for a point, this function will add those stations to the 
     # distance matrix and determine the array of points included in the radius, x
@@ -233,14 +216,14 @@ def inc_stations(j,i,N,K,r,site_collection_SM, site_collection_station, dist_mat
     inc_sta_indices = np.where(dist_sta_sit < r)
     if np.size(inc_sta_indices) != 0:
             
-        station_distance_matrix = np.zeros([np.size(inc_sta_indices), np.size(inc_sta_indices)+np.size(inc_indices)])
+        station_distance_matrix = np.zeros([np.size(inc_sta_indices), np.size(inc_sta_indices)+np.size(inc_ind)])
         # Calculate distance between each included station and all included grid points, then calculate the distance
         # from each included station to every other included station
         for eta in range(0, np.size(inc_sta_indices)):
-            for beta in range(0,np.size(inc_indices)):
+            for beta in range(0,np.size(inc_ind)):
                 station_distance_matrix[eta,np.size(inc_sta_indices) + beta] = geodetic_distance(
                     site_collection_station.lons[inc_sta_indices[0][eta]], site_collection_station.lats[inc_sta_indices[0][eta]], 
-                    site_collection_SM.lons[inc_indices[beta]], site_collection_SM.lats[inc_indices[beta]])
+                    site_collection_SM.lons[inc_ind[beta]], site_collection_SM.lats[inc_ind[beta]])
             for beta in range(0, np.size(inc_sta_indices)):
                 station_distance_matrix[eta, beta] = geodetic_distance(
                     site_collection_station.lons[inc_sta_indices[0][eta]], site_collection_station.lats[inc_sta_indices[0][eta]],
@@ -249,19 +232,21 @@ def inc_stations(j,i,N,K,r,site_collection_SM, site_collection_station, dist_mat
         # Concatenate the station distance matrix with the modified distance matrix, dist_mat
         dist_mat = np.concatenate((station_distance_matrix[:, np.size(inc_sta_indices):], dist_mat), axis=0)
         dist_mat = np.concatenate((station_distance_matrix.T, dist_mat), axis=1)
-
-        # x: vector of previously calculated covariance values
-        x = np.concatenate((np.zeros([np.size(inc_sta_indices),1]),X[inc_indices]), axis = 0)
-        x = np.mat(x[0:-1])
             
+        # x: vector of previously calculated covariance values
+        x = np.concatenate((np.zeros([np.size(inc_sta_indices),1]),X[inc_ind,0]), axis = 0)
+        x = np.mat(x[0:-1])
+
     else:
         # x: vector of previously calculated covariance values
-        x = X[inc_indices]
+        x = X[inc_ind,0]
         x = np.mat(x[0:-1])
+
+
     
     return {'dist_mat':dist_mat, 'x':x, 'inc_sta_indices':inc_sta_indices}
 
-def reduce_distance(j, vert, hor, N, distance_matrix, grid_indices, num):
+def reduce_distance(j, vert, hor, added_vert, N, distance_matrix, grid_indices):
     # Find which columns/rows in the distance matrix to keep
     # IN: j- points column
     #     vert- number of rows included in the radius
@@ -275,41 +260,78 @@ def reduce_distance(j, vert, hor, N, distance_matrix, grid_indices, num):
     #     inc_ind - indices of points included in dist_mat
     #     num_indices- number of points in top most row of distance_matrix
 
+    inc_ind = [None]*(vert*(2*hor+1))
     n_grid_indices = 0
-
-    grid_indices = np.concatenate([grid_indices, np.zeros([hor,1])])
-    grid_indices = np.reshape(grid_indices, [vert+1, 2*hor+1])
-
-    keep_ind = np.reshape(range(0,np.size(grid_indices)), [vert+1, 2*hor+1])
-
-    inc_col = range(0, 2*hor+1)
-    zer = hor
-
-    if j < hor:
-        for k in range(0, hor-j):
-            inc_col.pop(0)
-
-    if j > N-hor-1:
-        for k in range(N, j+hor+1):
-            inc_col.pop(-1)
-            zer -= 1
-    diff = num - (vert)*N-hor
-
-    inc_grid_indices = grid_indices[:,inc_col].flatten()
-    keep_ind = keep_ind[:,inc_col].flatten()
+    num_indices = 0
     
-    while zer != 0:
-        inc_grid_indices = inc_grid_indices[0:-1]
-        keep_ind = keep_ind[0:-1]
-        zer -= 1
+    if j < hor:
+        # On left end of grid
+        inc_indices = range(0,np.size(grid_indices))
+        if vert == 1:
+            num_indices = (j+1)
+            inc_indices = np.where(np.mod(inc_indices,hor+1) >=hor+1 - num_indices)
+        else:
+            num_indices = (j+hor+1)
+            inc_indices = np.where(np.mod(inc_indices,2*hor+1) >=2*hor+1 - num_indices)
+            
+        for k in range(0,vert):
+            if k == vert-1:
+                for eta in range(0,j+1):
+                    inc_ind[n_grid_indices] = [eta+N*k+ N*added_vert]
+                    n_grid_indices += 1
+            else:
+                for eta in range(0,j+hor+1):
+                    inc_ind[n_grid_indices] = [eta+N*k+N*added_vert]
+                    n_grid_indices += 1
+        del inc_ind[n_grid_indices:]
+            
+    elif j > N-hor-1:
+        # On right end of grid
+        inc_indices = range(0,np.size(grid_indices))
+        if vert == 1:
+            num_indices = (1+hor)
+            inc_indices = np.where(np.mod(inc_indices,hor+1) >=hor+1 - num_indices)
+        else:
+            num_indices = (N - j+hor)
+            inc_indices = np.where(np.mod(inc_indices,2*hor+1) <=num_indices-1)
+        for k in range(0,vert):
+            if k == vert-1:
+                for eta in range(j-hor,j+1):
+                    inc_ind[n_grid_indices] = [eta+N*k+N*added_vert]
+                    n_grid_indices += 1
+            else:
+                for eta in range(j-hor,N):
+                    inc_ind[n_grid_indices] = [eta+N*k+N*added_vert]
+                    n_grid_indices += 1
+        del inc_ind[n_grid_indices:]
+            
+    else:
+        # In the middle of the grid, all points included
+        inc_indices = range(0,np.size(grid_indices))
+        if vert == 1:
+            num_indices = (1+hor)
+            inc_indices = np.where(np.mod(inc_indices,hor+1) >=hor+1 - num_indices)
+        else:
+            num_indices = (2*hor+1)
+            inc_indices = np.where(np.mod(inc_indices,2*hor+1) >=2*hor+1 - num_indices)
+        for k in range(0,vert):
+            if k == vert-1:
+                for eta in range(j-hor,j+1):
+                    inc_ind[n_grid_indices] = [eta+N*k+N*added_vert]
+                    n_grid_indices += 1
+            else:
+                for eta in range(j-hor,j+hor+1):
+                    inc_ind[n_grid_indices] = [eta+N*k+N*added_vert]
+                    n_grid_indices += 1
+        del inc_ind[n_grid_indices:]
 
-    inc_grid_indices = [int(ind) + diff for ind in inc_grid_indices]
-    keep_ind = [int(ind) for ind in keep_ind]
+    inc_indices = np.array(inc_indices).flatten()
+        
+    # dist_mat: the distance matrix modified for the current point
+    dist_mat = distance_matrix[:,inc_indices]
+    dist_mat = dist_mat[inc_indices, :]
 
-    dist_mat = distance_matrix[:,keep_ind]
-    dist_mat = dist_mat[keep_ind,:]
-
-    return {'dist_mat':dist_mat, 'inc_indices':inc_grid_indices}
+    return {'dist_mat':dist_mat, 'inc_indices':inc_indices, 'inc_ind':inc_ind, 'num_indices':num_indices}
 
 def calc_full_dist(vert, hor, N, site_collection_SM):
     #####
@@ -323,16 +345,16 @@ def calc_full_dist(vert, hor, N, site_collection_SM):
     #####
 
     # gathers indices for full distance matrix for each row
-    grid_indices = [None]*((vert+1)*(2*hor+1))
+    grid_indices = [None]*((vert)*(2*hor+1))
     n_grid_indices = 0
-    for k in range(0, vert+1):
-        if k == vert:
+    for k in range(0, vert):
+        if k == vert-1:
             for j in range(0,hor+1):
-                grid_indices[n_grid_indices] = j + N*k
+                grid_indices[n_grid_indices] = [j + N*k]
                 n_grid_indices += 1
         else:
             for j in range(0,2*hor+1):
-                grid_indices[n_grid_indices] = j + N*k
+                grid_indices[n_grid_indices] = [j + N*k]
                 n_grid_indices += 1 
     del grid_indices[n_grid_indices:]
 
@@ -365,16 +387,17 @@ def calc_vert_hor(i, r, l, d):
     k = i
     vert_r = 0
     vert = 0
-    while vert_r+d[k] <= r:
+    while (vert_r+d[k] <= r)&(k>-1):
         vert_r += d[k]
         k -= 1
         vert += 1
     
     # adjusts for the unincluded rows
-    if i < vert:
-        vert = i
-
-    return {'vert':vert, 'hor':hor}
+    if i+1 > vert:
+        added_vert = i - vert+1
+    else:
+        added_vert = 0
+    return {'vert':vert, 'hor':hor, 'added_vert':added_vert}
 
 def set_up_grid_dist(M,N, site_collection_SM):
     ######

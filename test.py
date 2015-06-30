@@ -9,7 +9,7 @@ from neicio.gmt import GMTGrid
 import sys
 sys.path.append('/Users/sverros/Documents/Modules')
 from Correlation.setup import initialize
-from Correlation.loop_rand import main
+from Correlation.loop import main
 from Correlation.realizations import realizations
 from Correlation.plotting import plot
 
@@ -17,11 +17,11 @@ from Correlation.plotting import plot
 # Variable of interest                                                                                                                                                                       
 voi = 'PGA'
 # Specify the radius of interest
-r = 25
-
+r = 15
 
 intensity_factor = 0.9
-num_realizations = 0
+num_realizations = 1
+
 vscorr = True
 # Get shakemap for desired variable, PGA, uncertainty grid and stationdata                                                                                                                   
 # Selected Stations: Units in pctg                                                                                                                                                           
@@ -36,11 +36,14 @@ stationdata = readStation(stationlist)
 
 print 'Calling initialize'
 variables = initialize(shakemap, uncertainty, stationdata, vscorr)
+
+print variables['K'], ' stations', variables['N']*variables['M'], ' points'
+
 print 'Calling main'
 #rand = np.random.randn(variables['N']*variables['M'])
 rand = []
 
-with open('rand2.txt') as f:
+with open('rand.txt') as f:
     for line in f:
         rand.append(float(line))
 f.close()

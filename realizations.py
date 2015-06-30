@@ -5,19 +5,25 @@ def realizations(num_realizations, N,M, grid_arr, mu_arr, sigma_arr, uncertainty
     if num_realizations == 0:
         return
     else:
-        g = open('workfileNR0_realizations_1000', 'w')
+        h = open('random_arrays_100', 'r')
+        
+        g = open('workfile_185_radius_R35_100', 'w')
 
         s = str(num_realizations)
         g.write(s+'\n')
 
+        rand_arr = np.zeros(M*N)
+
         for j in range(0, num_realizations):
 
+            for i in range(0,M*N):
+                rand_arr[i] = h.readline()
+
             X = np.zeros([M*N,1])
-            rand_arr = np.random.randn(M*N)
-            X[0] = rand_arr[0]
-            for i in range(1,M*N):
+
+            for i in range(0,M*N):
                 nzeros = np.size(mu_arr[i]) - np.size(grid_arr[i])
-                x = np.append(np.zeros(nzeros), X[np.array(grid_arr[i]).squeeze()])
+                x = np.append(np.zeros(nzeros), X[np.array(grid_arr[i], dtype = 'i').squeeze()])
                 mu = np.dot(mu_arr[i], x)
                 X[i] = mu + rand_arr[i] * sigma_arr[i]
                 s = str(X[i])
@@ -37,5 +43,6 @@ def realizations(num_realizations, N,M, grid_arr, mu_arr, sigma_arr, uncertainty
                 print "Done with", j+1, "of", num_realizations, "iterations."
 
         g.close()
+        h.close()
 
         return
