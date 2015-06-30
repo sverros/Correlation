@@ -17,6 +17,8 @@ from matplotlib import cm
 from neicio.gmt import GMTGrid
 import time
 import sys
+
+
 def main(var, r, voi, rand, vscorr, intensity_factor):
     np.set_printoptions(linewidth = 200)
     #####
