@@ -18,20 +18,26 @@ from neicio.gmt import GMTGrid
 import time
 
 def main(var, r, voi, rand, vs_corr, intensity_factor):
-    #####
-    # Main program for computing spatial correlation
-    # IN: var- variables dictionary from initialize function. Contains M,N,K,site_collection_SM, 
-    # site_collection_station
-    #          uncertaintydata, data, location_lon/lat_g
-    #     r - radius
-    #     voi- variable of interest, i.e. PGA
-    #OUT: cor- grid of spatially correlated epsilon
-    #     data- grid of ShakeMap data
-    #     data_new- data with added spatial correlation
-    #     grid_arr- array for storing grid indices for multiple realizations
-    #     mu_arr- array for storing Sig21.T*Sig11inv for multiple realizations
-    #     sigma_arr- array for storing sigma for multiple realizations
-    #####
+#################################################################################
+# Main program for computing spatial correlation
+#
+# INPUTS: 
+#     var- variables dictionary from initialize function. Contains 
+#          M,N,K,site_collection_SM, site_collection_station
+#          uncertaintydata, data, location_lon/lat_g
+#     r - radius
+#     voi- variable of interest, i.e. PGA
+#     rand- array of random variables
+#     vs_corr- boolean to determine if Vs30 are correlated. See
+#          JB2009
+#     intensity_factor- factor for non-native data
+#OUT: cor- grid of spatially correlated epsilon
+#     data- grid of ShakeMap data
+#     data_new- data with added spatial correlation
+#     grid_arr- array for storing grid indices for multiple realizations
+#     mu_arr- array for storing Sig21.T*Sig11inv for multiple realizations
+#     sigma_arr- array for storing sigma for multiple realizations 
+################################################################################
 
     start = time.time()    
     OL_time = 0
@@ -58,7 +64,6 @@ def main(var, r, voi, rand, vs_corr, intensity_factor):
     pre_loop_time = time.time() - start
 
     for i in range(0,M):
-
         OL_start = time.time()
         
         # Find the number of points in radius horozontally and vertically for each row
@@ -66,10 +71,9 @@ def main(var, r, voi, rand, vs_corr, intensity_factor):
 
         # Calculate the full distance matrix for each row
         dist = calc_full_dist(vhva['vert'], vhva['hor'], N, var['site_collection_SM'])
-
         first_time_per_row = 1
-
         OL_time += time.time() - OL_start
+
         for j in range(0,N):
             IL_start = time.time()
             num = i*N+j
@@ -82,11 +86,10 @@ def main(var, r, voi, rand, vs_corr, intensity_factor):
                                dist_calc['dist_mat'], X, dist_calc['inc_ind'], dist_calc['inc_indices'])
 
             if np.size(dist_calc['inc_indices']) == 1:
-
-                # no conditioning points, correlation value is random                                                                                          
+                # no conditioning points, correlation value is random
                 X[num] = rand[num]
 
-                # Store for multiple realizations                                                                                                                 
+                # Store for multiple realizations
                 grid_arr [num] = np.zeros(0)
                 mu_arr   [num] = np.zeros(0)
                 sigma_arr[num] = 1
@@ -100,13 +103,11 @@ def main(var, r, voi, rand, vs_corr, intensity_factor):
                         base = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], num, intensity_factor)
                         first_time_per_row = 0
 
-                    #mu  = base['Sig12'].T*base['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
                     mu  = base['Sig12'].T*base['Sig11inv']*(out['x'])
-                    
                     rand_num = rand[num]
                     X[num] = mu+rand_num*base['R']
 
-                    # Store for multiple realizations                                                                                                       
+                    # Store for multiple realizations
                     grid_arr [num] = dist_calc['inc_ind'][0:-1]
                     mu_arr   [num] = base['Sig12'].T*base['Sig11inv']
                     sigma_arr[num] = base['R']
@@ -114,13 +115,9 @@ def main(var, r, voi, rand, vs_corr, intensity_factor):
 
                 else:
                     other = calculate_corr(out['dist_mat'], voi, JB_cor_model, var, out['inc_sta_indices'], num, intensity_factor)
-                    
-                    #mu = other['Sig12'].T*other['Sig11inv']*(out['x']- np.mean(X[0:i*N+j]))
                     mu = other['Sig12'].T*other['Sig11inv']*(out['x'])
                     rand_num = rand[num]
                     X[num] = mu+rand_num*other['R']
-
-
 
                     # Store for multiple realizations                                                                             
                     grid_arr [num] = dist_calc['inc_ind'][0:-1]
@@ -134,9 +131,9 @@ def main(var, r, voi, rand, vs_corr, intensity_factor):
 
     DATA = var['data']
     COR = np.reshape(X, [M,N]) #units epsilon
+
     #Multiply by uncertainty                                                                                                   
     X = np.multiply(COR, var['uncertaintydata']) # ln(pctg)
-                
     DATA_NEW = np.multiply(DATA,np.exp(X))
     
     end = time.time() - start
@@ -145,27 +142,32 @@ def main(var, r, voi, rand, vs_corr, intensity_factor):
     print 'Inner loop time', IL_time
     print 'Outer loop time', OL_time
 
-    return {'cor':COR, 'data':DATA, 'data_new':DATA_NEW, 'grid_arr':grid_arr, 'mu_arr':mu_arr, 'sigma_arr':sigma_arr, 'rand_arr':rand_arr}
+    return {'cor':COR, 'data':DATA, 'data_new':DATA_NEW, 'grid_arr':grid_arr, 'mu_arr':mu_arr, 'sigma_arr':sigma_arr}
 
 
 
 def calculate_corr(dist_mat, voi, JB_cor_model, var, inc_sta_indices, num, intensity_factor = 0.9):
-    #####
-    # Calculates correlation model for distance matrix and voi
-    # IN: dist_mat- reduced distance matrix
-    #     voi- variable of interest
-    #     JB_cor_model- correlation model from correlation in oq-hazardlib
-    #OUT: Sig12, Sig11inv- partitions of correlation matrix
-    #     R - Sqrt of sigma
-    #####
+################################################################
+# Calculates correlation model for distance matrix and voi
+# 
+# INPUTS: 
+#     dist_mat- reduced distance matrix
+#     voi- variable of interest
+#     JB_cor_model- correlation model from correlation in oq-hazardlib
+#     var- variables output from intialize
+#     ...
+#OUTPUTS: 
+#     Sig12, Sig11inv- partitions of correlation matrix
+#     R - Sqrt of sigma
+################################################################
     correlation_model = JB_cor_model._get_correlation_model(dist_mat, from_string(voi))
     
-#    intensity = var['intensity'][inc_sta_indices]
-#    if np.size(intensity) != 0:
-#        for i in range(0,np.size(intensity)):
-#            if intensity[i] == 1:
-#                correlation_model[i,i+1:] = correlation_model[i,i+1:].copy()*intensity_factor
-#                correlation_model[i+1:,i] = correlation_model[i+1:,i].copy()*intensity_factor
+    intensity = var['intensity'][inc_sta_indices]
+    if np.size(intensity) != 0:
+        for i in range(0,np.size(intensity)):
+            if intensity[i] == 1:
+                correlation_model[i,i+1:] = correlation_model[i,i+1:].copy()*intensity_factor
+                correlation_model[i+1:,i] = correlation_model[i+1:,i].copy()*intensity_factor
 
     Sig11 = np.mat(correlation_model[0:-1, 0:-1])
     Sig12 = np.mat(correlation_model[0:-1, -1]).T
@@ -179,43 +181,36 @@ def calculate_corr(dist_mat, voi, JB_cor_model, var, inc_sta_indices, num, inten
 
     R = np.sqrt(max(sigma, 2e-16))
 
-
-#    if (19000 < num)and(num < 19030):
-#        print 'Sig11', Sig11
-#        print 'Sig11inv', Sig11inv
-#        print 'Sig12', Sig12
-#        print 'Sig22', Sig22
-#        print 'sigma', sigma
-    
     return {'Sig12':Sig12, 'Sig11inv':Sig11inv, 'R':R}
 
 def inc_stations(j,i,N,K,r,site_collection_SM, site_collection_station, dist_mat, X, inc_ind, inc_indices):
-    #####
-    # If there are stations included within the radius for a point, this function will add those stations to the 
-    # distance matrix and determine the array of points included in the radius, x
-    # IN: i,j- current points row and column 
-    #     N,K - number of points in row and total number of stations
-    #     r- radius 
-    #     site_collection_SM/station- site collections for ShakeMap and station data
-    #     dist_mat- reduced distance matrix
-    #     X- array of previously calculated correlation values
-    #     inc_ind- indices of included points
-    #     inc_indices- total number of points in the top most row of distance matrix
-    #OUT: dist_mat- reduced distance matrix, modified to include stations
-    #     x- array of points in X included in radius and stations included 
-    #     inc_sta_indices- indices of stations included in the radius
-    #####
-
+#################################################################
+# If there are stations included within the radius for a point, this function will add those stations to the 
+# distance matrix and determine the array of points included in the radius, x
+# 
+# INPUTS: 
+#     i,j- current points row and column 
+#     N,K - number of points in row and total number of stations
+#     r- radius 
+#     site_collection_SM/station- site collections for ShakeMap and station data
+#     dist_mat- reduced distance matrix
+#     X- array of previously calculated correlation values
+#     inc_ind- indices of included points
+#     inc_indices- total number of points in the top most row of distance matrix
+# OUTPUTS: 
+#     dist_mat- reduced distance matrix, modified to include stations
+#     x- array of points in X included in radius and stations included 
+#     inc_sta_indices- indices of stations included in the radius
+#################################################################
     num = i*N+j
     
-    # Compute the distances for all stations to the grid point we're looking at                                                                                                                
+    # Compute the distances for all stations to the grid point we're looking at
     dist_sta_sit = np.array(geodetic_distance(site_collection_SM.lons[j+i*N], site_collection_SM.lats[j+i*N],
                                               site_collection_station.lons[0:K], site_collection_station.lats[0:K]))
         
     # Find which of those stations are in the radius we are considering
     inc_sta_indices = np.where(dist_sta_sit < r)
     if np.size(inc_sta_indices) != 0:
-            
         station_distance_matrix = np.zeros([np.size(inc_sta_indices), np.size(inc_sta_indices)+np.size(inc_ind)])
         # Calculate distance between each included station and all included grid points, then calculate the distance
         # from each included station to every other included station
@@ -241,25 +236,27 @@ def inc_stations(j,i,N,K,r,site_collection_SM, site_collection_station, dist_mat
         # x: vector of previously calculated covariance values
         x = X[inc_ind,0]
         x = np.mat(x[0:-1])
-
-
     
     return {'dist_mat':dist_mat, 'x':x, 'inc_sta_indices':inc_sta_indices}
 
 def reduce_distance(j, vert, hor, added_vert, N, distance_matrix, grid_indices):
-    # Find which columns/rows in the distance matrix to keep
-    # IN: j- points column
-    #     vert- number of rows included in the radius
-    #     hor- number of columns included in radius
-    #     added_vert- number of rows in between first row and first included row 
-    #     N- number of points in row
-    #     distance_matrix- full distance matrix
-    #     grid_indices- indices included in full distance matrix
-    #OUT: dist_mat- reduced distance matrix
-    #     inc_indices- number of points in top most row of dist_mat
-    #     inc_ind - indices of points included in dist_mat
-    #     num_indices- number of points in top most row of distance_matrix
-
+################################################################
+# Find which columns/rows in the distance matrix to keep
+#
+# INPUTS: 
+#     j- points column
+#     vert- number of rows included in the radius
+#     hor- number of columns included in radius
+#     added_vert- number of rows in between first row and first included row 
+#     N- number of points in row
+#     distance_matrix- full distance matrix
+#     grid_indices- indices included in full distance matrix
+# OUTPUTS: 
+#     dist_mat- reduced distance matrix
+#     inc_indices- number of points in top most row of dist_mat
+#     inc_ind - indices of points included in dist_mat
+#     num_indices- number of points in top most row of distance_matrix
+#################################################################
     inc_ind = [None]*(vert*(2*hor+1))
     n_grid_indices = 0
     num_indices = 0
@@ -334,16 +331,18 @@ def reduce_distance(j, vert, hor, added_vert, N, distance_matrix, grid_indices):
     return {'dist_mat':dist_mat, 'inc_indices':inc_indices, 'inc_ind':inc_ind, 'num_indices':num_indices}
 
 def calc_full_dist(vert, hor, N, site_collection_SM):
-    #####
-    # Calculates full distance matrix. Called once per row.
-    # IN: vert- number of included rows
-    #     hor- number of columns within radius 
-    #     N- number of points in row
-    #     site_collection_SM- site collection for ShakeMap data
-    #OUT: grid_indices- indices of points included in distance matrix
-    #     distance_matrix- full distance matrix
-    #####
-
+#########################################################
+# Calculates full distance matrix. Called once per row.
+#
+# INPUTS: 
+#     vert- number of included rows
+#     hor- number of columns within radius 
+#     N- number of points in row
+#     site_collection_SM- site collection for ShakeMap data
+# OUTPUTS: 
+#     grid_indices- indices of points included in distance matrix
+#     distance_matrix- full distance matrix
+#########################################################
     # gathers indices for full distance matrix for each row
     grid_indices = [None]*((vert)*(2*hor+1))
     n_grid_indices = 0
@@ -372,15 +371,18 @@ def calc_full_dist(vert, hor, N, site_collection_SM):
     return {'grid_indices':grid_indices, 'distance_matrix':distance_matrix}
 
 def calc_vert_hor(i, r, l, d):
-    ######
-    # Calculates the number of vertical of horozontal points in the full distance matrix
-    # IN: i- current row
-    #     r- radius
-    #     l,d- vectors of distances between points vertically and horozontally
-    #OUT: vert- number of rows in radius above current point
-    #     hor- number of columns in radius to the left of current point
-    #     added_vert- number of rows in between first row and the first row included in radius
-    ######
+###########################################################
+# Calculates the number of vertical of horozontal points in the full distance matrix
+#
+# INPUTS: 
+#     i- current row
+#     r- radius
+#     l,d- vectors of distances between points vertically and horozontally
+# OUTPUTS: 
+#     vert- number of rows in radius above current point
+#     hor- number of columns in radius to the left of current point
+#     added_vert- number of rows in between first row and the first row included in radius
+###########################################################
     hor = int(np.floor(r/l[1]))
     
     # number of data points in vertical direction
@@ -400,13 +402,15 @@ def calc_vert_hor(i, r, l, d):
     return {'vert':vert, 'hor':hor, 'added_vert':added_vert}
 
 def set_up_grid_dist(M,N, site_collection_SM):
-    ######
-    # Calculates the vertical and horozontal spacing between points for each row
-    # IN: M,N- number of points in grid vertically and horozontally
-    #     site_collection_SM- site collection for ShakeMap data
-    # OUT: l,d- vectors of distances between points vertically and horozontally
-    ######
-
+###########################################################
+# Calculates the vertical and horozontal spacing between points for each row
+#
+# INPUTS: 
+#     M,N- number of points in grid vertically and horozontally
+#     site_collection_SM- site collection for ShakeMap data
+# OUTPUTS: 
+#     l,d- vectors of distances between points vertically and horozontally
+###########################################################
     l = np.zeros([M-1])
     d = np.zeros([M])
     

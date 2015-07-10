@@ -1,13 +1,13 @@
 import numpy as np
 
-def realizations(num_realizations, N,M, grid_arr, mu_arr, sigma_arr, uncertaintydata, DATA):
+def realizations(num_realizations, radius, N,M, grid_arr, mu_arr, sigma_arr, uncertaintydata, DATA):
 
     if num_realizations == 0:
         return
     else:
-        h = open('random_arrays_100', 'r')
+        h = open('random_arrays_LP_100', 'r')
         
-        g = open('workfile_185_radius_R35_100', 'w')
+        g = open(('workfile_LP_radius_R%i_100' % radius), 'w')
 
         s = str(num_realizations)
         g.write(s+'\n')

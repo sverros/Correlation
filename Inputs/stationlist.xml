@@ -76,8 +76,8 @@
 >
 ]>
 <shakemap-data code_version="3.5" map_version="2">
-<earthquake id="19940117123055" lat="34.211" lon="-118.546" mag="6.6" year="1994" month="1" day="17" hour="12" minute="30" second="55" timezone="GMT" depth="19" network="us" locstring="Northridge, California" created="1431552030" />
-<stationlist created="1431552030">
+<earthquake id="19891018000415" lat="37.0400" lon="-121.8800" mag="6.9" year="1989" month="10" day="18" hour="0" minute="4" second="15" timezone="GMT" depth="18.0" network="us" locstring="Loma Prieta, California" created="1435259478" />
+<stationlist created="1435259478">
 
 </stationlist>
 </shakemap-data>
