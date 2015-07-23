@@ -4,8 +4,8 @@
 # VARIABLES:
 #     voi - variable of interest, i.e. PGA
 #     r - radius of influence
-#     intensity_factor- factor for non-native data
 #     num_realization- integer for desired number of realizations
+#     corr_model- JB2009 or GA2010
 #     vs_corr- Vs30 correlated bool, see JB2009
 #     input data- grid.xml, uncertainty.xml, and stationlist.xml
 #         stored in Inputs directory
@@ -26,10 +26,11 @@ from Correlation.realizations import realizations
 from Correlation.plotting import plot
 
 voi = 'PGA'
-r = np.array([15, 25, 35, 45, 55, 65, 75])
-intensity_factor = 0.9
+r = [45]
 num_realizations = 100
+corr_model = 'JB2009'
 vscorr = True
+plot_on = False
 
 for R in range(0,np.size(r)):
     radius = r[R]
@@ -38,33 +39,36 @@ for R in range(0,np.size(r)):
     shakemap = ShakeGrid('Inputs/grid.xml', variable = '%s' % voi)
 
     # Uncertainty Data: Units in ln(pctg)
-    uncertainty = ShakeGrid('Inputs/uncertainty.xml', variable= 'STD%s' % voi)
+    unc_INTRA = ShakeGrid('Inputs/uncertainty.xml', variable= 'GMPE_INTRA_STD%s' % voi)
+    unc_INTER = ShakeGrid('Inputs/uncertainty.xml', variable= 'GMPE_INTER_STD%s' % voi)
 
     # Station Data: Units in pctg
     stationlist = 'Inputs/stationlist.xml'
     stationdata = readStation(stationlist)
 
     print 'Calling initialize'
-    variables = initialize(shakemap, uncertainty, stationdata, vscorr)
+    variables = initialize(shakemap, unc_INTRA, unc_INTRA, stationdata)
 
+    print 'Radius: ', radius
     print variables['K'], ' stations', variables['N']*variables['M'], ' points'
 
     # Calculate random vector
     rand = np.random.randn(variables['N']*variables['M'])
-    # rand = []
-    # 
-    # with open('rand.txt') as f:
-    #     for line in f:
-    #         rand.append(float(line))
-    # f.close()
+    # Truncate to +/- 3sigma
+#    for i in range(0,variables['N']*variables['M']):
+#        if abs(rand[i]) > 3:
+#            rand[i] = np.sign(rand[i])*(6-rand[i])
 
     print 'Calling main'
-    out = main(variables, radius, voi, rand, vscorr, intensity_factor)
+    out = main(variables, radius, voi, rand, corr_model, vscorr)
 
-    print 'Computing realizations'
-    realizations(num_realizations, radius, variables['N'], variables['M'], out['grid_arr'], 
+    if num_realizations > 0:
+        print 'Computing realizations'
+        realizations(num_realizations, radius, variables['N'], variables['M'], out['grid_arr'], 
                  out['mu_arr'], out['sigma_arr'], variables['uncertaintydata'], out['data'])
 
-    plot(out, variables, voi, shakemap, stationdata)
+    if plot_on == True:
+        print 'Plotting results'
+        plot(out, variables, voi, shakemap, stationdata)
 
 
